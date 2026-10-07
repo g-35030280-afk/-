@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>华文趣味大闯关 - 一年级量词与词句重组</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%);
+            min-height: 100vh;
+        }
+        .font-kuaile {
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+        .pop-in {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .bounce-slight {
+            animation: bounceSlight 2s infinite;
+        }
+        @keyframes bounceSlight {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-800 antialiased">
+
+    <!-- Header Navigation -->
+    <header class="bg-white/80 backdrop-blur border-b border-sky-100 sticky top-0 z-50 px-4 py-3 shadow-sm">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="text-3xl">🌟</span>
+                <h1 class="text-xl md:text-2xl font-bold font-kuaile text-sky-600 tracking-wide">华文趣味大闯关</h1>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="flex items-center space-x-4">
+                <div class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold text-sm flex items-center gap-1 shadow-inner">
+                    <span>⭐</span>
+                    <span id="score">0</span>
+                    <span class="text-xs text-amber-600">分</span>
+                </div>
+                <button onclick="restartGame()" class="text-slate-500 hover:text-sky-600 p-1.5 rounded-lg transition hover:bg-sky-50" title="重新开始">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 flex flex-col justify-center">
+
+        <!-- Stage Switcher Tabs -->
+        <div class="flex justify-center mb-6 gap-3">
+            <button id="tab-stage1" onclick="switchStage(1)" class="px-5 py-2.5 rounded-2xl font-bold font-kuaile text-lg transition flex items-center gap-2 shadow-md bg-sky-500 text-white">
+                <span>🎈</span> 第一关：量词大作战 (10题)
+            </button>
+            <button id="tab-stage2" onclick="switchStage(2)" class="px-5 py-2.5 rounded-2xl font-bold font-kuaile text-lg transition flex items-center gap-2 bg-white/70 text-slate-600 hover:bg-white shadow-sm">
+                <span>🧩</span> 第二关：词句重组乐 (10题)
+            </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="mb-6 bg-white/60 p-3 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex justify-between items-center text-xs md:text-sm font-semibold text-slate-500 mb-1.5">
+                <span id="progress-text">进度：第 1 / 10 题</span>
+                <span id="accuracy-text">正确率：100%</span>
+            </div>
+            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                <div id="progress-bar" class="bg-gradient-to-r from-sky-400 to-emerald-400 h-full transition-all duration-300 rounded-full" style="width: 10%"></div>
+            </div>
+        </div>
+
+        <!-- Game Card Screen -->
+        <div id="game-card" class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-sky-100 relative overflow-hidden pop-in min-h-[380px] flex flex-col justify-between">
+            
+            <!-- Question Header -->
+            <div id="question-area" class="flex-1 flex flex-col justify-center items-center text-center">
+                <!-- Content generated dynamically -->
+            </div>
+
+            <!-- Interaction Area -->
+            <div id="action-area" class="mt-6">
+                <!-- Options / Reorder Chips generated dynamically -->
+            </div>
+
+            <!-- Hint / Explanation Banner -->
+            <div id="feedback-banner" class="hidden mt-4 p-4 rounded-2xl text-center font-semibold text-sm transition pop-in"></div>
+
+            <!-- Next Button Bar -->
+            <div id="next-bar" class="hidden mt-4 flex justify-end">
+                <button onclick="nextQuestion()" class="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold font-kuaile px-8 py-3 rounded-2xl text-lg shadow-lg shadow-emerald-200 transition flex items-center gap-2">
+                    下一题 ➔
+                </button>
+            </div>
+        </div>
+
+        <!-- Victory Modal Screen (Hidden initially) -->
+        <div id="victory-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl pop-in relative border-4 border-amber-300">
+                <div class="text-6xl mb-3 bounce-slight">🏆</div>
+                <h2 class="text-3xl font-bold font-kuaile text-amber-500 mb-2">闯关成功！太棒啦！</h2>
+                <p class="text-slate-600 mb-6">你完成了所有的练习题目！</p>
+                
+                <div class="bg-amber-50 rounded-2xl p-4 mb-6 text-left border border-amber-200 space-y-2">
+                    <div class="flex justify-between font-bold text-slate-700">
+                        <span>最终得分：</span>
+                        <span id="final-score" class="text-amber-600 text-xl">100分</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-slate-600">
+                        <span>获赠星星：</span>
+                        <span id="final-stars">⭐⭐⭐</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-slate-600">
+                        <span>答对题数：</span>
+                        <span id="final-accuracy">20 / 20</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="restartGame()" class="flex-1 bg-gradient-to-r from-sky-400 to-sky-500 hover:from-sky-500 hover:to-sky-600 text-white font-bold font-kuaile py-3 rounded-2xl shadow-lg shadow-sky-200 transition">
+                        再玩一次
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-400">
+        一年级华文趣味巩固练习 • 快乐学习 知识满满
+    </footer>
+
+    <!-- JavaScript Game Logic -->
+    <script>
+        // Game Data - Stage 1: Quantifiers (10 questions)
+        const quantifiersData = [
+            {
+                id: 1,
+                icon: "🐶",
+                prefix: "一",
+                suffix: "可爱的小狗",
+                answer: "只",
+                options: ["只", "棵", "顶", "辆"],
+                hint: "动物（如小狗、小猫、小鸟）通常用“只”。"
+            },
+            {
+                id: 2,
+                icon: "☂️",
+                prefix: "一",
+                suffix: "漂亮的雨伞",
+                answer: "把",
+                options: ["把", "件", "条", "本"],
+                hint: "有手柄、可以拿在手里的工具（如雨伞、剪刀）用“把”。"
+            },
+            {
+                id: 3,
+                icon: "☁️",
+                prefix: "一",
+                suffix: "洁白的云朵",
+                answer: "朵",
+                options: ["朵", "只", "座", "双"],
+                hint: "花朵、云朵等形状如花团状的物体用“朵”。"
+            },
+            {
+                id: 4,
+                icon: "📖",
+                prefix: "一",
+                suffix: "有趣的故事书",
+                answer: "本",
+                options: ["本", "条", "棵", "张"],
+                hint: "书籍、装订成册的读物用“本”。"
+            },
+            {
+                id: 5,
+                icon: "🌊",
+                prefix: "一",
+                suffix: "弯弯的小河",
+                answer: "条",
+                options: ["条", "顶", "朵", "件"],
+                hint: "细细长长的物体（如小河、小鱼、裤子）用“条”。"
+            },
+            {
+                id: 6,
+                icon: "👟",
+                prefix: "一",
+                suffix: "舒适的鞋子",
+                answer: "双",
+                options: ["双", "只", "把", "座"],
+                hint: "成双成对的东西（如鞋子、袜子、手）用“双”。"
+            },
+            {
+                id: 7,
+                icon: "👕",
+                prefix: "一",
+                suffix: "干净的上衣",
+                answer: "件",
+                options: ["件", "棵", "本", "辆"],
+                hint: "衣服、事情等通常用“件”。"
+            },
+            {
+                id: 8,
+                icon: "🌳",
+                prefix: "一",
+                suffix: "高大的绿树",
+                answer: "棵",
+                options: ["棵", "朵", "条", "把"],
+                hint: "植物、树木通常用“棵”。"
+            },
+            {
+                id: 9,
+                icon: "🚲",
+                prefix: "一",
+                suffix: "新买的自行车",
+                answer: "辆",
+                options: ["辆", "双", "顶", "只"],
+                hint: "车辆、交通工具（如自行车、汽车）用“辆”。"
+            },
+            {
+                id: 10,
+                icon: "⛰️",
+                prefix: "一",
+                suffix: "高耸的大山",
+                answer: "座",
+                options: ["座", "本", "件", "朵"],
+                hint: "大型、固定不可移动的建筑物或自然物（如大山、大桥）用“座”。"
+            }
+        ];
+
+        // Game Data - Stage 2: Sentence Reordering (10 questions)
+        const reorderData = [
+            {
+                id: 1,
+                icon: "🌺",
+                tokens: ["公园里", "有", "许多", "漂亮的花朵"],
+                correctOrder: [0, 1, 2, 3],
+                fullSentence: "公园里有许多漂亮的花朵。"
+            },
+            {
+                id: 2,
+                icon: "🐦",
+                tokens: ["小鸟", "在树枝上", "快乐地", "唱歌"],
+                correctOrder: [0, 1, 2, 3],
+                fullSentence: "小鸟在树枝上快乐地唱歌。"
+            },
+            {
+                id: 3,
+                icon: "🏰",
+                tokens: ["我和妹妹", "在沙滩上", "堆城堡"],
+                correctOrder: [0, 1, 2],
+                fullSentence: "我和妹妹在沙滩上堆城堡。"
+            },
+            {
+                id: 4,
+                icon: "🌅",
+                tokens: ["太阳", "从东方", "慢慢地", "升起来了"],
+                correctOrder: [0, 1, 2, 3],
+                fullSentence: "太阳从东方慢慢地升起来了。"
+            },
+            {
+                id: 5,
+                icon: "🏫",
+                tokens: ["同学们", "在教室里", "认真地", "听课"],
+                correctOrder: [0, 1, 2, 3],
+                fullSentence: "同学们在教室里认真地听课。"
+            },
+            {
+                id: 6,
+                icon: "🥦",
+                tokens: ["妈妈", "买了一包", "新鲜的", "蔬菜"],
+                correctOrder: [0, 1, 2, 3],
+                fullSentence: "妈妈买了一包新鲜的蔬菜。"
+            },
+            {
+                id: 7,
+                icon: "🚲",
+                tokens: ["弟弟", "学会了", "骑自行车"],
+                correctOrder: [0, 1, 2],
+                fullSentence: "弟弟学会了骑自行车。"
+            },
+            {
+                id: 8,
+                icon: "🌈",
+                tokens: ["雨后", "天空中", "出现了一道", "彩虹"],
+                correctOrder: [0, 1, 2, 3],
+                fullSentence: "雨后天空中出现了一道彩虹。"
+            },
+            {
+                id: 9,
+                icon: "🌸",
+                tokens: ["我们要", "爱护", "校园里的", "花草树木"],
+                correctOrder: [0, 1, 2, 3],
+                fullSentence: "我们要爱护校园里的花草树木。"
+            },
+            {
+                id: 10,
+                icon: "📚",
+                tokens: ["放学后", "小明", "按时完成了", "功课"],
+                correctOrder: [0, 1, 2, 3],
+                fullSentence: "放学后小明按时完成了功课。"
+            }
+        ];
+
+        // State variables
+        let currentStage = 1;
+        let currentIndex = 0;
+        let score = 0;
+        let correctAnswersCount = 0;
+        let totalAnswered = 0;
+        let userTokens = []; // Selected tokens for stage 2
+        let currentShuffledTokens = []; // Shuffled tokens for stage 2
+
+        // Web Audio API Sound generator
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(130, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'click') {
+                    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.08);
+                }
+            } catch (e) {
+                console.log("Audio play deferred", e);
+            }
+        }
+
+        // Speech Synthesis Text-to-Speech
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize / Load
+        window.onload = () => {
+            loadQuestion();
+        };
+
+        function switchStage(stageNum) {
+            if (currentStage === stageNum) return;
+            playSound('click');
+            currentStage = stageNum;
+            currentIndex = 0;
+
+            // UI Tab updates
+            const tab1 = document.getElementById('tab-stage1');
+            const tab2 = document.getElementById('tab-stage2');
+
+            if (stageNum === 1) {
+                tab1.className = "px-5 py-2.5 rounded-2xl font-bold font-kuaile text-lg transition flex items-center gap-2 shadow-md bg-sky-500 text-white";
+                tab2.className = "px-5 py-2.5 rounded-2xl font-bold font-kuaile text-lg transition flex items-center gap-2 bg-white/70 text-slate-600 hover:bg-white shadow-sm";
+            } else {
+                tab2.className = "px-5 py-2.5 rounded-2xl font-bold font-kuaile text-lg transition flex items-center gap-2 shadow-md bg-sky-500 text-white";
+                tab1.className = "px-5 py-2.5 rounded-2xl font-bold font-kuaile text-lg transition flex items-center gap-2 bg-white/70 text-slate-600 hover:bg-white shadow-sm";
+            }
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            // Reset state
+            userTokens = [];
+            document.getElementById('feedback-banner').classList.add('hidden');
+            document.getElementById('next-bar').classList.add('hidden');
+
+            const data = currentStage === 1 ? quantifiersData : reorderData;
+            const item = data[currentIndex];
+
+            // Update Progress Bar
+            document.getElementById('progress-text').innerText = `关卡 ${currentStage}：第 ${currentIndex + 1} / ${data.length} 题`;
+            const percentage = ((currentIndex + 1) / data.length) * 100;
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+
+            const accuracy = totalAnswered > 0 ? Math.round((correctAnswersCount / totalAnswered) * 100) : 100;
+            document.getElementById('accuracy-text').innerText = `正确率：${accuracy}%`;
+
+            const qArea = document.getElementById('question-area');
+            const aArea = document.getElementById('action-area');
+
+            if (currentStage === 1) {
+                // Quantifier Stage
+                qArea.innerHTML = `
+                    <div class="text-6xl mb-4 bounce-slight select-none">${item.icon}</div>
+                    <div class="text-2xl md:text-3xl font-bold text-slate-700 flex items-center justify-center gap-2 flex-wrap">
+                        <span>${item.prefix}</span>
+                        <span id="quantifier-blank" class="w-20 h-12 border-b-4 border-sky-400 bg-sky-50 rounded-lg text-sky-600 font-extrabold flex items-center justify-center mx-1 shadow-inner">？</span>
+                        <span>${item.suffix}</span>
+                    </div>
+                `;
+
+                aArea.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                        ${item.options.map(opt => `
+                            <button onclick="checkQuantifier('${opt}')" class="opt-btn bg-slate-50 hover:bg-sky-500 hover:text-white border-2 border-slate-200 hover:border-sky-500 text-slate-700 font-bold text-xl py-4 rounded-2xl transition duration-200 shadow-sm active:scale-95">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                // Reorder Stage
+                // Shuffle tokens while keeping track of original indices
+                currentShuffledTokens = item.tokens.map((t, idx) => ({ text: t, origIndex: idx }));
+                // Shuffle array deterministically for puzzle
+                currentShuffledTokens.sort((a, b) => (a.origIndex * 7 + 3) % 5 - (b.origIndex * 7 + 3) % 5);
+
+                qArea.innerHTML = `
+                    <div class="text-5xl mb-3 select-none">${item.icon}</div>
+                    <div class="text-lg md:text-xl text-slate-500 font-medium mb-2">请按正确顺序点击词语组成完整的句子：</div>
+                    
+                    <!-- Sentence Drop Box -->
+                    <div id="sentence-drop-box" class="w-full min-h-[70px] bg-sky-50/80 border-2 border-dashed border-sky-300 rounded-2xl p-3 flex flex-wrap items-center justify-center gap-2 transition">
+                        <span class="text-slate-400 text-sm italic">点击下方的词语块卡片...</span>
+                    </div>
+                `;
+
+                renderReorderChips();
+            }
+        }
+
+        // Render chips for Stage 2
+        function renderReorderChips() {
+            const aArea = document.getElementById('action-area');
+            const item = reorderData[currentIndex];
+
+            aArea.innerHTML = `
+                <div class="flex flex-wrap justify-center gap-3 max-w-xl mx-auto mb-4">
+                    ${currentShuffledTokens.map((tok, idx) => {
+                        const isUsed = userTokens.some(ut => ut.shuffledIdx === idx);
+                        return `
+                            <button onclick="selectToken(${idx})" ${isUsed ? 'disabled' : ''} class="token-btn text-base md:text-lg font-bold px-4 py-2.5 rounded-xl border-2 transition ${
+                                isUsed 
+                                ? 'bg-slate-100 border-slate-200 text-slate-300 opacity-40 cursor-not-allowed' 
+                                : 'bg-white border-sky-200 text-slate-700 hover:border-sky-400 hover:bg-sky-50 shadow-sm active:scale-95'
+                            }">
+                                ${tok.text}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+                
+                <div class="flex justify-center gap-3">
+                    <button onclick="resetUserTokens()" class="text-slate-500 hover:text-slate-700 text-sm font-semibold px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition">
+                        ↺ 重置选项
+                    </button>
+                    <button onclick="checkReorderAnswer()" ${userTokens.length < item.tokens.length ? 'disabled' : ''} id="submit-reorder-btn" class="px-6 py-2.5 font-bold rounded-xl text-white transition ${
+                        userTokens.length === item.tokens.length 
+                        ? 'bg-sky-500 hover:bg-sky-600 shadow-md active:scale-95' 
+                        : 'bg-slate-300 cursor-not-allowed'
+                    }">
+                        检查答案 ✓
+                    </button>
+                </div>
+            `;
+
+            // Update drop box
+            const dropBox = document.getElementById('sentence-drop-box');
+            if (userTokens.length === 0) {
+                dropBox.innerHTML = `<span class="text-slate-400 text-sm italic">点击下方的词语块卡片...</span>`;
+            } else {
+                dropBox.innerHTML = userTokens.map(ut => `
+                    <span class="bg-white border-2 border-sky-400 text-sky-800 font-bold px-3 py-1.5 rounded-xl text-base md:text-lg shadow-sm pop-in">
+                        ${ut.text}
+                    </span>
+                `).join('') + `<span class="text-slate-700 font-extrabold text-xl">。</span>`;
+            }
+        }
+
+        function selectToken(shuffledIdx) {
+            playSound('click');
+            userTokens.push({
+                shuffledIdx: shuffledIdx,
+                text: currentShuffledTokens[shuffledIdx].text,
+                origIndex: currentShuffledTokens[shuffledIdx].origIndex
+            });
+            renderReorderChips();
+        }
+
+        function resetUserTokens() {
+            playSound('click');
+            userTokens = [];
+            renderReorderChips();
+        }
+
+        // Check Stage 1 Answer
+        function checkQuantifier(userChoice) {
+            const item = quantifiersData[currentIndex];
+            const isCorrect = userChoice === item.answer;
+
+            // Lock option buttons
+            const buttons = document.querySelectorAll('.opt-btn');
+            buttons.forEach(btn => btn.disabled = true);
+
+            const blank = document.getElementById('quantifier-blank');
+            blank.innerText = userChoice;
+
+            handleAnswerResult(isCorrect, item.answer, item.hint, `一${item.answer}${item.suffix}`);
+        }
+
+        // Check Stage 2 Answer
+        function checkReorderAnswer() {
+            const item = reorderData[currentIndex];
+            const userIndices = userTokens.map(u => u.origIndex);
+            const isCorrect = userIndices.every((val, idx) => val === item.correctOrder[idx]);
+
+            handleAnswerResult(isCorrect, item.fullSentence, "请注意句子的逻辑顺序：主语 ➔ 在什么地方 ➔ 怎么样地 ➔ 做什么事。", item.fullSentence);
+        }
+
+        // Shared Answer Evaluation Logic
+        function handleAnswerResult(isCorrect, correctAnswerText, hintText, ttsPhrase) {
+            totalAnswered++;
+            const banner = document.getElementById('feedback-banner');
+            const nextBar = document.getElementById('next-bar');
+
+            banner.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800');
+
+            if (isCorrect) {
+                playSound('correct');
+                score += 10;
+                correctAnswersCount++;
+                document.getElementById('score').innerText = score;
+
+                banner.classList.add('bg-emerald-100', 'text-emerald-800');
+                banner.innerHTML = `
+                    <div class="flex items-center justify-center gap-2 text-lg font-bold">
+                        <span>🎉 回答正确！加10分！</span>
+                        <button onclick="speakText('${ttsPhrase}')" class="ml-2 text-sky-600 hover:text-sky-800 text-xl" title="朗读句子">🔊</button>
+                    </div>
+                `;
+                
+                // Read out full phrase/sentence automatically
+                speakText(ttsPhrase);
+            } else {
+                playSound('wrong');
+                banner.classList.add('bg-rose-100', 'text-rose-800');
+                banner.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="font-bold text-base">❌ 答错了，加油！正确答案是：<span class="text-rose-600 underline">${correctAnswerText}</span></div>
+                        <div class="text-xs text-rose-700">💡 小提示：${hintText}</div>
+                    </div>
+                `;
+            }
+
+            nextBar.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            playSound('click');
+            const currentData = currentStage === 1 ? quantifiersData : reorderData;
+
+            if (currentIndex < currentData.length - 1) {
+                currentIndex++;
+                loadQuestion();
+            } else {
+                // Stage complete
+                if (currentStage === 1) {
+                    // Prompt switch to stage 2
+                    switchStage(2);
+                } else {
+                    // All stages complete!
+                    showVictoryScreen();
+                }
+            }
+        }
+
+        function showVictoryScreen() {
+            playSound('correct');
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+
+            document.getElementById('final-score').innerText = `${score}分`;
+            document.getElementById('final-accuracy').innerText = `${correctAnswersCount} / ${totalAnswered}`;
+
+            let stars = "⭐⭐⭐";
+            if (score < 140) stars = "⭐";
+            else if (score < 180) stars = "⭐⭐";
+            document.getElementById('final-stars').innerText = stars;
+
+            document.getElementById('victory-modal').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            playSound('click');
+            score = 0;
+            correctAnswersCount = 0;
+            totalAnswered = 0;
+            currentStage = 1;
+            currentIndex = 0;
+            document.getElementById('score').innerText = "0";
+            document.getElementById('victory-modal').classList.add('hidden');
+            switchStage(1);
+        }
+    </script>
+</body>
+</html>
